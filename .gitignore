@@ -1,0 +1,8 @@
+bin/
+build/
+.vscode/
+.vs/
+lib/
+.git/
+*.pdb
+doc/
