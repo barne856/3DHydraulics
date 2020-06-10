@@ -1,0 +1,3 @@
+[submodule "MARE"]
+	path = MARE
+	url = https://github.com/barne856/MARE
