@@ -14,7 +14,10 @@ public:
       gen_entity<RibbonUI>(this);
   }
   void on_enter() override {}
-  void render(float dt) override {}
+  void render(float dt) override {
+    Renderer::enable_depth_testing(false);
+    Renderer::enable_blending(true);
+  }
   void on_exit() override {}
 };
 

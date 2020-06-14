@@ -6,17 +6,16 @@
 
 using namespace mare;
 
-class HydraulicsProgram : public GLRenderer
-{
+class HydraulicsProgram : public GLRenderer {
 public:
   void init_info() override {
-    info.window_title = "3D Hydraulics";     // Window title
-    info.window_width = 1280;          // window width in pixels
-    info.window_height = 720;          // window height in pixels
-    info.window_aspect = 16.0f / 9.0f; // window aspect ratio
-    info.samples = 0;                  // antialiasing samples
-    info.fullscreen = false;           // render in fullscreen mode?
-    info.vsync = false;                 // render in double buffered vsync mode?
+    info.window_title = "3D Hydraulics"; // Window title
+    info.window_width = 1280;            // window width in pixels
+    info.window_height = 720;            // window height in pixels
+    info.window_aspect = 16.0f / 9.0f;   // window aspect ratio
+    info.samples = 16;                   // antialiasing samples
+    info.fullscreen = false;             // render in fullscreen mode?
+    info.vsync = true;   // render in double buffered vsync mode?
     info.debug_mode = 1; // 0000 == off, 0001 == high, 0010 == med, 0100 == low,
                          // 1000 == notification
   }
