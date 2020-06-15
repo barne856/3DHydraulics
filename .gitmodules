@@ -1,3 +1,6 @@
 [submodule "MARE"]
 	path = MARE
 	url = https://github.com/barne856/MARE
+[submodule "ext/nfd"]
+	path = ext/nfd
+	url = https://github.com/mlabbe/nativefiledialog
