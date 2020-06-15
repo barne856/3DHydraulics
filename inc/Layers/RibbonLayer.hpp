@@ -9,14 +9,24 @@ using namespace mare;
 #include "Entities/DebugInfo.hpp"
 #include "Entities/UI/RibbonUI.hpp"
 
+/**
+ * @brief A Layer used to render the RibbonUI
+ *
+ */
 class RibbonLayer : public Layer {
 public:
+  /**
+   * @brief Construct a new RibbonLayer
+   *
+   */
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
     dinfo = gen_entity<DebugInfo>(1000);
-    gen_entity<RibbonUI>(this);
+    gen_entity<RibbonUI>(this, 200);
     dinfo->color->set_color(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     dinfo->set_scale(glm::vec3(0.1f));
-    std::string debug_str = Renderer::get_vendor_string() + '\n' + Renderer::get_version_string() + '\n' + Renderer::get_renderer_string();
+    std::string debug_str = Renderer::get_vendor_string() + '\n' +
+                            Renderer::get_version_string() + '\n' +
+                            Renderer::get_renderer_string();
     dinfo->text->set_text(debug_str);
     dinfo->text->set_center(glm::vec3(0.0f));
   }
@@ -24,9 +34,22 @@ public:
   void render(float dt) override {
     Renderer::enable_depth_testing(false);
     Renderer::enable_blending(true);
+    t += dt;
+    fps_accum += 1.0 / dt;
+    fps_count += 1.0;
+    if (t > 0.5f) {
+      t = 0.0f;
+      dinfo->text->set_text(std::to_string(fps_accum / fps_count));
+      dinfo->text->set_center(glm::vec3(0.0f));
+      fps_count = 0.0;
+      fps_accum = 0.0;
+    }
   }
   void on_exit() override {}
   Referenced<DebugInfo> dinfo;
+  float t = 0.0f;
+  double fps_accum;
+  double fps_count;
 };
 
 #endif

@@ -15,7 +15,7 @@ public:
     info.window_aspect = 16.0f / 9.0f;   // window aspect ratio
     info.samples = 16;                   // antialiasing samples
     info.fullscreen = false;             // render in fullscreen mode?
-    info.vsync = true;   // render in double buffered vsync mode?
+    info.vsync = false;   // render in double buffered vsync mode?
     info.debug_mode = 1; // 0000 == off, 0001 == high, 0010 == med, 0100 == low,
                          // 1000 == notification
   }

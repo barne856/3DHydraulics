@@ -41,8 +41,8 @@ public:
    * @brief Construct a new RibbonUI.
    *
    * @param layer The base layer that the RibbonUI is attached to.
-   * @param bounds The bounds of the RibbonUI used to scale to element and test
-   * for input.
+   * @param ribbon_width_in_pixels The width of the ribbon in pixels, used to
+   * size the flyout and widgets as well. Default is 100.
    */
   RibbonUI(Layer *layer, uint32_t ribbon_width_in_pixels = 100)
       : UIElement(layer, util::Rect()), ribbon_width(ribbon_width_in_pixels) {
@@ -69,11 +69,11 @@ public:
     shadow_material = gen_ref<VertexColorMaterial>();
 
     // Push tools onto the tools stack
-    tools.push_back(gen_ref<LoadTool>(layer));
-    tools.push_back(gen_ref<LoadTool>(layer));
-    tools.push_back(gen_ref<LoadTool>(layer));
-    tools.push_back(gen_ref<LoadTool>(layer));
-    tools.push_back(gen_ref<LoadTool>(layer));
+    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
+    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
+    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
+    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
+    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
 
     // Set the initial bounds to be on the left side of the screen and rescale.
     rescale();
@@ -120,6 +120,11 @@ public:
       tools[i]->rescale(5.0f * ribbon_width_layer);
     }
   }
+  /**
+   * @brief Runs when a new tool is selected and rescales the UI.
+   * 
+   * @param new_tool_index The index of the new tool.
+   */
   void select_tool(uint32_t new_tool_index) {
     tools[tool_index]->on_deselect();
     tool_index = new_tool_index;
@@ -129,6 +134,11 @@ public:
     }
     rescale();
   }
+  /**
+   * @brief The number of tools in the RibbonUI.
+   * 
+   * @return The number of tools in the RibbonUI.
+   */
   uint32_t tool_count() { return tools.size(); }
   void on_focus() override {}
   void on_unfocus() override {}

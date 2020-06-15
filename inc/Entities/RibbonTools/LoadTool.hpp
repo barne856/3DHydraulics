@@ -11,9 +11,26 @@
 #include "Renderer.hpp"
 using namespace mare;
 
+#include <iostream>
+
+// EXT
+#include "nfd.h"
+
+/**
+ * @brief A Tool used on the RibbonUI to load data into the Scene.
+ *
+ */
 class LoadTool : public RibbonTool {
 public:
-  LoadTool(Layer *layer) : RibbonTool(layer) {
+  /**
+   * @brief Construct a new LoadTool object
+   * @details The LoadTool is to be constructed inside the RibbonUI and pushed
+   * onto the tool stack.
+   * @param layer The layer which the UIElements will use to draw on.
+   * @param slot_height_in_pixels The slot height in pixels, normally the same
+   * as the ribbon width in pixels.
+   */
+  LoadTool(Layer *layer, uint32_t slot_height_in_pixels) : RibbonTool(layer) {
     icon = gen_ref<CompositeMesh>();
     auto vertical = gen_ref<QuadrangleMesh>();
     auto horizontal = gen_ref<QuadrangleMesh>();
@@ -23,20 +40,36 @@ public:
     std::dynamic_pointer_cast<CompositeMesh>(icon)->push_mesh(horizontal);
     util::Rect bounds = util::Rect();
     if (layer) {
-      int slot_height = 100.0f; // total slot height including padding
-      push_flyout_element(gen_ref<Slider>(layer, bounds),
-                          {slot_height, slot_height / 3, slot_height / 3});
-      push_flyout_element(
-          gen_ref<TextBox>(layer, bounds, 1, 0.025f, 0.025f, 280),
-          {slot_height, slot_height / 5.0f, slot_height / 10.0f});
-      push_flyout_element(gen_ref<Switch>(layer, bounds),
-                          {slot_height, 1.75f * slot_height, slot_height / 10});
-      push_flyout_element(gen_ref<Button>(layer, bounds, "Button"),
+      int slot_height =
+          slot_height_in_pixels; // total slot height including padding
+      auto junc_button = gen_ref<Button>(layer, bounds, "LOAD JUNCTIONS");
+      junc_button->set_on_click_callback(load_junctions);
+      auto pipe_button = gen_ref<Button>(layer, bounds, "LOAD PIPES");
+      pipe_button->set_on_click_callback(load_pipes);
+      push_flyout_element(junc_button,
                           {slot_height, slot_height / 5, slot_height / 10});
-      push_flyout_element(gen_ref<ColorPicker>(layer, bounds),
-                          {5 * slot_height, slot_height / 5, slot_height / 10});
+      push_flyout_element(pipe_button,
+                          {slot_height, slot_height / 5, slot_height / 10});
     }
   }
+  static void load_junctions(Layer *layer) {
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog( "shp", NULL, &outPath );
+    if ( result == NFD_OKAY )
+    {
+      // Successful read
+      std::cout << outPath << std::endl;
+    }
+    else if ( result == NFD_CANCEL )
+    {
+      // User pressed cancel
+    }
+    else 
+    {
+      // Error, run NFD_GetError()
+    }
+  }
+  static void load_pipes(Layer *layer) {}
   void on_select() override {}
   void on_deselect() override {}
 };
