@@ -3,7 +3,6 @@
 
 // MARE
 #include "Components/RenderPack.hpp"
-#include "Components/Rigidbody.hpp"
 #include "Components/Widget.hpp"
 #include "Materials/BasicColorMaterial.hpp"
 #include "Materials/VertexColorMaterial.hpp"
@@ -13,7 +12,7 @@
 using namespace mare;
 
 // TOOLS
-#include "Entities/RibbonTools/LoadTool.hpp"
+#include "Entities/RibbonTool.hpp"
 
 // Standard Library
 #include <vector>
@@ -24,7 +23,6 @@ using namespace mare;
 // forward declare system
 class RibbonUIControls;
 class RibbonUIRenderer;
-class RibbonUIPhysics;
 
 /**
  * @brief A Ribbon UIElement
@@ -35,7 +33,7 @@ class RibbonUIPhysics;
  * and x-axis runnign horizontally.
  *
  */
-class RibbonUI : public UIElement, public Rigidbody {
+class RibbonUI : public UIElement {
 public:
   /**
    * @brief Construct a new RibbonUI.
@@ -51,11 +49,8 @@ public:
     gen_system<RibbonUIRenderer>();
     // Generate Controls System
     gen_system<RibbonUIControls>();
-    // Generate Physics System for flyout animations
-    gen_system<RibbonUIPhysics>();
 
     // Generate the assets used for the RibbonUI.
-    flyout = gen_ref<QuadrangleMesh>();
     ribbon = gen_ref<QuadrangleMesh>();
     selection = gen_ref<QuadrangleMesh>();
     shadow = gen_ref<QuadrangleMesh>(shadow_color_dark, shadow_color_light,
@@ -67,13 +62,6 @@ public:
     selection_material = gen_ref<BasicColorMaterial>();
     selection_material->set_color(selection_color);
     shadow_material = gen_ref<VertexColorMaterial>();
-
-    // Push tools onto the tools stack
-    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
-    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
-    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
-    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
-    tools.push_back(gen_ref<LoadTool>(layer, ribbon_width_in_pixels));
 
     // Set the initial bounds to be on the left side of the screen and rescale.
     rescale();
@@ -92,12 +80,6 @@ public:
     bounds.right() = -scale * aspect + ribbon_width_layer;
     bounds.top() = scale;
     bounds.bottom() = -scale;
-    flyout_closed_position = -scale * aspect - ribbon_width_layer * 1.5f;
-    flyout_opened_position = -scale * aspect + ribbon_width_layer * 3.5f;
-    flyout_position = glm::mix(flyout_closed_position, flyout_opened_position,
-                               flyout_percent_open);
-    flyout->set_scale({5.0f * ribbon_width_layer, 2.0f * scale, 1.0f});
-    flyout->set_position({flyout_position, 0.0f, 0.0f});
     shadow->set_scale({ribbon_width_layer / 10.0f, 2.0f * scale, 1.0f});
     shadow->set_position(
         {-scale * aspect + ribbon_width_layer * 21.0f / 20.0f, 0.0f, 0.0f});
@@ -117,26 +99,38 @@ public:
           {bounds.left() + 0.5f * ribbon_width_layer,
            bounds.top() - (static_cast<float>(i) + 0.5f) * ribbon_width_layer,
            0.0f});
-      tools[i]->rescale(5.0f * ribbon_width_layer);
+      tools[i]->rescale(ribbon_width_layer);
     }
+  }
+  void push_tool(Referenced<RibbonTool> tool) {
+    tools.push_back(tool);
+    rescale();
   }
   /**
    * @brief Runs when a new tool is selected and rescales the UI.
-   * 
+   *
    * @param new_tool_index The index of the new tool.
    */
   void select_tool(uint32_t new_tool_index) {
-    tools[tool_index]->on_deselect();
+    if (tool_index >= 0) {
+      tools[tool_index]->on_deselect();
+      tools[tool_index]->flyout_open = false;
+      tools[tool_index]->selected = false;
+    }
     tool_index = new_tool_index;
     tools[new_tool_index]->on_select();
+    tools[new_tool_index]->selected = true;
     if (tools[new_tool_index]->flyout_elements.size() == 0) {
-      flyout_open = false;
+      tools[new_tool_index]->flyout_open = false;
+    } else {
+      tools[new_tool_index]->flyout_open = true;
     }
+
     rescale();
   }
   /**
    * @brief The number of tools in the RibbonUI.
-   * 
+   *
    * @return The number of tools in the RibbonUI.
    */
   uint32_t tool_count() { return tools.size(); }
@@ -144,7 +138,6 @@ public:
   void on_unfocus() override {}
 
   std::vector<Referenced<RibbonTool>> tools;
-  Referenced<QuadrangleMesh> flyout;
   Referenced<QuadrangleMesh> ribbon;
   Referenced<QuadrangleMesh> selection;
   Referenced<QuadrangleMesh> shadow;
@@ -157,13 +150,8 @@ public:
   glm::vec4 selection_color{0.17f, 0.45f, 1.0f, 1.0f};
   glm::vec4 shadow_color_dark{0.0f, 0.0f, 0.0f, 0.3f};
   glm::vec4 shadow_color_light{0.0f, 0.0f, 0.0f, 0.0f};
-  float flyout_closed_position = 0.0f;
-  float flyout_opened_position = 0.0f;
-  float flyout_position = 0.0f;
-  float flyout_percent_open = 0.0f;
   uint32_t ribbon_width; // in pixels
-  uint32_t tool_index = 0;
-  bool flyout_open = false;
+  int tool_index = -1;
 };
 
 class RibbonUIControls : public ControlsSystem<RibbonUI> {
@@ -181,8 +169,9 @@ public:
       if (i < ribbon->tool_count() && i != ribbon->tool_index) {
         ribbon->select_tool(i);
       }
-      if (ribbon->tools[ribbon->tool_index]->flyout_elements.size()) {
-        ribbon->flyout_open = true;
+      if (ribbon->tool_index >= 0 &&
+          ribbon->tools[ribbon->tool_index]->flyout_elements.size()) {
+        ribbon->tools[ribbon->tool_index]->flyout_open = true;
       }
       return true;
     }
@@ -191,83 +180,9 @@ public:
     float ribbon_width_layer =
         scale * aspect * static_cast<float>(ribbon->ribbon_width) /
         static_cast<float>(Renderer::get_info().window_width);
-    if (input.LEFT_MOUSE_JUST_PRESSED &&
+    if (ribbon->tool_index >= 0 && input.LEFT_MOUSE_JUST_PRESSED &&
         layer_coords.x > -scale * aspect + 6.0f * ribbon_width_layer) {
-      ribbon->flyout_open = false;
-    }
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        if (cs->on_mouse_button(input, elem.get())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  bool on_mouse_move(const RendererInput &input, RibbonUI *ribbon) override {
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        if (cs->on_mouse_move(input, elem.get())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  bool on_resize(const RendererInput &input, RibbonUI *ribbon) override {
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        cs->on_resize(input, elem.get());
-      }
-    }
-    ribbon->rescale();
-    return false; // propagate
-  }
-  bool on_key(const RendererInput &input, RibbonUI *ribbon) override {
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        if (cs->on_key(input, elem.get())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  bool on_mouse_wheel(const RendererInput &input, RibbonUI *ribbon) override {
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        if (cs->on_mouse_wheel(input, elem.get())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  bool on_char(char character, RibbonUI *ribbon) override {
-    // callback flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto controls_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : controls_systems) {
-        if (cs->on_char(character, elem.get())) {
-          return true;
-        }
-      }
+      ribbon->tools[ribbon->tool_index]->flyout_open = false;
     }
     return false;
   }
@@ -276,18 +191,6 @@ public:
 class RibbonUIRenderer : public RenderSystem<RibbonUI> {
 public:
   void render(float dt, Camera *camera, RibbonUI *ribbon) override {
-    ribbon->flyout->render(camera, ribbon->ribbon_material.get());
-    // render flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto render_systems = elem->get_systems<IRenderSystem>();
-      for (auto &rs : render_systems) {
-        // render the flyout element using the tool's transform
-        elem->set_position({ribbon->flyout_position, 0.0f, 0.0f});
-        rs->render(dt, camera, elem.get());
-      }
-    }
-
     ribbon->shadow->render(camera, ribbon->shadow_material.get());
     ribbon->ribbon->render(camera, ribbon->ribbon_material.get());
     ribbon->selection->render(camera, ribbon->selection_material.get());
@@ -299,57 +202,6 @@ public:
       }
     }
   }
-};
-
-class RibbonUIPhysics : public PhysicsSystem<RibbonUI> {
-public:
-  void update(float dt, RibbonUI *ribbon) override {
-    // update flyout elements
-    auto tool = ribbon->tools[ribbon->tool_index];
-    for (auto &elem : tool->flyout_elements) {
-      auto physics_systems = elem->get_systems<IPhysicsSystem>();
-      for (auto &ps : physics_systems) {
-        ps->update(dt, elem.get());
-      }
-    }
-
-    if (ribbon->flyout_position == ribbon->flyout_closed_position &&
-        ribbon->flyout_open == false) {
-      return;
-    }
-    if (ribbon->flyout_position == ribbon->flyout_opened_position &&
-        ribbon->flyout_open == true) {
-      return;
-    }
-    glm::vec3 force{};
-    if (ribbon->flyout_open) {
-      force = k * (ribbon->flyout_opened_position - ribbon->flyout_position) -
-              c * ribbon->linear_velocity;
-    } else {
-      force = k * (ribbon->flyout_closed_position - ribbon->flyout_position) -
-              c * ribbon->linear_velocity;
-    }
-    ribbon->linear_velocity += force * dt;
-    float new_position = glm::clamp(
-        ribbon->flyout_position + ribbon->linear_velocity.x * dt,
-        ribbon->flyout_closed_position, ribbon->flyout_opened_position);
-    if (new_position - ribbon->flyout_closed_position <= tol) {
-      new_position = ribbon->flyout_closed_position;
-    }
-    if (ribbon->flyout_opened_position - new_position <= tol) {
-      new_position = ribbon->flyout_opened_position;
-    }
-    ribbon->flyout_position = new_position;
-    ribbon->flyout_percent_open =
-        (ribbon->flyout_position - ribbon->flyout_closed_position) /
-        (ribbon->flyout_opened_position - ribbon->flyout_closed_position);
-    ribbon->flyout->set_position({ribbon->flyout_position, 0.0f, 0.0f});
-  }
-  // Critically damped harmonic oscillator, mass = 1.
-  const float k = 1000.0f; // strength of the spring.
-  const float c =
-      2.0f * sqrtf(k);      // strength of the damping (critically damped).
-  const float tol = 0.001f; // distance when knob snaps to the lerp_to position.
 };
 
 #endif

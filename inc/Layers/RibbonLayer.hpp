@@ -8,6 +8,7 @@ using namespace mare;
 // 3DH
 #include "Entities/DebugInfo.hpp"
 #include "Entities/UI/RibbonUI.hpp"
+#include "Entities/RibbonTools/LoadTool.hpp"
 
 /**
  * @brief A Layer used to render the RibbonUI
@@ -20,8 +21,18 @@ public:
    *
    */
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
+    uint32_t ribbon_width_in_pixels = 200;
+    auto tool1 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    auto tool2 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    auto tool3 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    auto tool4 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    auto ribbon_ui = gen_entity<RibbonUI>(this, ribbon_width_in_pixels);
+    ribbon_ui->push_tool(tool1);
+    ribbon_ui->push_tool(tool2);
+    ribbon_ui->push_tool(tool3);
+    ribbon_ui->push_tool(tool4);
+
     dinfo = gen_entity<DebugInfo>(1000);
-    gen_entity<RibbonUI>(this, 200);
     dinfo->color->set_color(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     dinfo->set_scale(glm::vec3(0.1f));
     std::string debug_str = Renderer::get_vendor_string() + '\n' +
