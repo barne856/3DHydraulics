@@ -174,84 +174,89 @@ public:
 class RibbonToolControls : public ControlsSystem<RibbonTool> {
 public:
   bool on_key(const RendererInput &input, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_key(input, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          if (cs->on_key(input, elem.get())) {
+            return true;
+          }
         }
       }
     }
     return false;
   }
   bool on_mouse_button(const RendererInput &input, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_mouse_button(input, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          if (cs->on_mouse_button(input, elem.get())) {
+            return true;
+          }
         }
       }
     }
     return false;
   }
   bool on_mouse_move(const RendererInput &input, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_mouse_move(input, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          if (cs->on_mouse_move(input, elem.get())) {
+            return true;
+          }
         }
       }
     }
     return false;
   }
   bool on_mouse_wheel(const RendererInput &input, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_mouse_wheel(input, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          if (cs->on_mouse_wheel(input, elem.get())) {
+            return true;
+          }
         }
       }
     }
     return false;
   }
   bool on_resize(const RendererInput &input, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_resize(input, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        elem->rescale();
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          cs->on_resize(input, elem.get());
         }
       }
     }
     return false;
   }
   bool on_char(char character, RibbonTool *tool) override {
-    // loop through flyout elements
-    for (auto &elem : tool->flyout_elements) {
-      auto control_systems = elem->get_systems<IControlsSystem>();
-      for (auto &cs : control_systems) {
-        // callback the flyout element
-        if(cs->on_char(character, elem.get()))
-        {
-          return true;
+    if (tool->flyout_position == tool->flyout_opened_position) {
+      // loop through flyout elements
+      for (auto &elem : tool->flyout_elements) {
+        auto control_systems = elem->get_systems<IControlsSystem>();
+        for (auto &cs : control_systems) {
+          // callback the flyout element
+          if (cs->on_char(character, elem.get())) {
+            return true;
+          }
         }
       }
     }

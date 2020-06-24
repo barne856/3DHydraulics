@@ -4,6 +4,7 @@
 #include "Entities/RibbonTool.hpp"
 #include "Entities/UI/Button.hpp"
 #include "Entities/UI/ColorPicker.hpp"
+#include "Entities/UI/Dropdown.hpp"
 #include "Entities/UI/Slider.hpp"
 #include "Entities/UI/Switch.hpp"
 #include "Entities/UI/TextBox.hpp"
@@ -12,6 +13,9 @@
 using namespace mare;
 
 #include <iostream>
+
+// GDAL
+#include <ogrsf_frmts.h>
 
 // EXT
 #include "nfd.h"
@@ -42,36 +46,79 @@ public:
     if (layer) {
       int slot_height =
           slot_height_in_pixels; // total slot height including padding
-      auto junc_button = gen_ref<Button>(layer, bounds, "LOAD JUNCTIONS");
-      junc_button->set_on_click_callback(load_junctions);
-      auto pipe_button = gen_ref<Button>(layer, bounds, "LOAD PIPES");
-      pipe_button->set_on_click_callback(load_pipes);
-      push_flyout_element(junc_button,
+      auto open_junc_button =
+          gen_ref<Button<LoadTool>>(layer, bounds, "OPEN FILE");
+      open_junc_button->set_on_click_callback(open_junctions, this);
+      auto import_junc_button =
+          gen_ref<Button<LoadTool>>(layer, bounds, "IMPORT JUNCTIONS");
+      import_junc_button->set_on_click_callback(import_junctions, this);
+      ID_dropdown = gen_ref<Dropdown>(layer, bounds, "ID");
+      INV_dropdown = gen_ref<Dropdown>(layer, bounds, "INV");
+      DIA_dropdown = gen_ref<Dropdown>(layer, bounds, "DIA");
+      DEPTH_dropdown = gen_ref<Dropdown>(layer, bounds, "DEPTH");
+      push_flyout_element(open_junc_button,
                           {slot_height, slot_height / 5, slot_height / 10});
-      push_flyout_element(pipe_button,
+      push_flyout_element(ID_dropdown,
+                          {slot_height, slot_height / 5, slot_height / 10});
+      push_flyout_element(INV_dropdown,
+                          {slot_height, slot_height / 5, slot_height / 10});
+      push_flyout_element(DIA_dropdown,
+                          {slot_height, slot_height / 5, slot_height / 10});
+      push_flyout_element(DEPTH_dropdown,
+                          {slot_height, slot_height / 5, slot_height / 10});
+      push_flyout_element(import_junc_button,
                           {slot_height, slot_height / 5, slot_height / 10});
     }
   }
-  static void load_junctions(Layer *layer) {
+  static void open_junctions(LoadTool *tool) {
     nfdchar_t *outPath = NULL;
-    nfdresult_t result = NFD_OpenDialog( "shp", NULL, &outPath );
-    if ( result == NFD_OKAY )
-    {
+    nfdresult_t result = NFD_OpenDialog("shp", NULL, &outPath);
+    if (result == NFD_OKAY) {
       // Successful read
-      std::cout << outPath << std::endl;
-    }
-    else if ( result == NFD_CANCEL )
-    {
+      GDALDataset *poDS;
+      poDS = static_cast<GDALDataset *>(
+          GDALOpenEx(outPath, GDAL_OF_VECTOR, NULL, NULL, NULL));
+      if (poDS == NULL) {
+        std::cerr << "Error: Could not open file." << std::endl;
+        return;
+      } else {
+        std::cout << "Successfully read file!" << std::endl;
+        OGRLayer *poLayer;
+        poLayer = poDS->GetLayer(0);
+        OGRFeature *poFeature;
+        poLayer->ResetReading();
+        std::vector<std::string> field_names{};
+        int field_count = poLayer->GetLayerDefn()->GetFieldCount();
+        std::cout << std::to_string(field_count) << " Fields in the file."
+                  << std::endl;
+        for (int i = 0; i < field_count; i++) {
+          field_names.push_back(
+              poLayer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef());
+        }
+        GDALClose(poDS);
+        tool->ID_dropdown->set_selection_options(field_names, 4);
+        tool->INV_dropdown->set_selection_options(field_names, 4);
+        tool->DIA_dropdown->set_selection_options(field_names, 4);
+        tool->DEPTH_dropdown->set_selection_options(field_names, 4);
+      }
+    } else if (result == NFD_CANCEL) {
       // User pressed cancel
-    }
-    else 
-    {
+    } else {
       // Error, run NFD_GetError()
     }
   }
-  static void load_pipes(Layer *layer) {}
+  static void import_junctions(LoadTool* tool)
+  {
+    
+  }
   void on_select() override {}
   void on_deselect() override {}
+
+private:
+  Referenced<Dropdown> ID_dropdown;
+  Referenced<Dropdown> INV_dropdown;
+  Referenced<Dropdown> DIA_dropdown;
+  Referenced<Dropdown> DEPTH_dropdown;
 };
 
 #endif

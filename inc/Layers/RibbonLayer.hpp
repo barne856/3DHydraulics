@@ -3,6 +3,7 @@
 
 // MARE
 #include "Layer.hpp"
+#include "Entities/UI/Dropdown.hpp"
 using namespace mare;
 
 // 3DH
@@ -21,7 +22,7 @@ public:
    *
    */
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
-    uint32_t ribbon_width_in_pixels = 200;
+    uint32_t ribbon_width_in_pixels = 150;
     auto tool1 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
     auto tool2 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
     auto tool3 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);

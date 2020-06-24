@@ -186,6 +186,11 @@ public:
     }
     return false;
   }
+  bool on_resize(const RendererInput &input, RibbonUI *ribbon) override
+  {
+    ribbon->rescale();
+    return false;
+  }
 };
 
 class RibbonUIRenderer : public RenderSystem<RibbonUI> {
