@@ -20,7 +20,8 @@ add_subdirectory(./MARE)
 add_subdirectory(./ext)
 
 set(SRC
-./src/main.cpp)
+./src/main.cpp
+./src/HydraulicNetwork.cpp)
 
 add_executable(3DH ${SRC})
 

@@ -22,16 +22,10 @@ public:
    *
    */
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
-    uint32_t ribbon_width_in_pixels = 150;
-    auto tool1 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
-    auto tool2 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
-    auto tool3 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
-    auto tool4 = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    uint32_t ribbon_width_in_pixels = 75;
+    auto load_tool = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
     auto ribbon_ui = gen_entity<RibbonUI>(this, ribbon_width_in_pixels);
-    ribbon_ui->push_tool(tool1);
-    ribbon_ui->push_tool(tool2);
-    ribbon_ui->push_tool(tool3);
-    ribbon_ui->push_tool(tool4);
+    ribbon_ui->push_tool(load_tool);
 
     dinfo = gen_entity<DebugInfo>(1000);
     dinfo->color->set_color(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));

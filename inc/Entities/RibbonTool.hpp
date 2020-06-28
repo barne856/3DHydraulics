@@ -40,6 +40,7 @@ public:
   virtual void on_deselect() = 0;
   Referenced<Mesh> icon;
   void rescale(float ribbon_width) {
+    current_ribbon_width = ribbon_width;
     float scale = base_layer->get_ortho_scale();
     float aspect = Renderer::get_info().window_aspect;
     flyout_closed_position = -scale * aspect - ribbon_width * 1.5f;
@@ -88,6 +89,16 @@ public:
     flyout_elements.push_back(elem);
     element_slots.push_back(slots);
   }
+  /**
+   * @brief Clear the flyout element stack.
+   * @details Clears the flyout UIElements and the element_slots vectors.
+   *
+   */
+  void clear_flyout_elements() {
+    flyout_elements.clear();
+    element_slots.clear();
+  }
+  float current_ribbon_width;
   std::vector<Referenced<UIElement>> flyout_elements{};
   std::vector<glm::ivec3>
       element_slots; // {slots, hz padding, vt padding} in pixels
