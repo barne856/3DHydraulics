@@ -17,14 +17,15 @@ using namespace mare;
 // GDAL
 #include <ogrsf_frmts.h>
 
-// EXT
-#include "nfd.h"
+// 3DH
+#include "hyd_util.hpp"
 
 /**
  * @brief A Tool used on the RibbonUI to load data into the Scene.
  *
  */
-class LoadTool : public RibbonTool {
+class LoadTool : public RibbonTool
+{
 public:
   /**
    * @brief Construct a new LoadTool object
@@ -34,7 +35,8 @@ public:
    * @param slot_height_in_pixels The slot height in pixels, normally the same
    * as the ribbon width in pixels.
    */
-  LoadTool(Layer *layer, uint32_t slot_height_in_pixels) : RibbonTool(layer) {
+  LoadTool(Layer *layer, uint32_t slot_height_in_pixels) : RibbonTool(layer)
+  {
     icon = gen_ref<CompositeMesh>();
     auto vertical = gen_ref<QuadrangleMesh>();
     auto horizontal = gen_ref<QuadrangleMesh>();
@@ -43,7 +45,8 @@ public:
     std::dynamic_pointer_cast<CompositeMesh>(icon)->push_mesh(vertical);
     std::dynamic_pointer_cast<CompositeMesh>(icon)->push_mesh(horizontal);
     util::Rect bounds = util::Rect();
-    if (layer) {
+    if (layer)
+    {
       slot_height =
           slot_height_in_pixels; // total slot height including padding
       // data type selection dropdown box
@@ -81,12 +84,14 @@ public:
                           {slot_height, slot_height / 5, slot_height / 10});
     }
   }
-  static void on_data_type_select(LoadTool *tool) {
+  static void on_data_type_select(LoadTool *tool)
+  {
     int slot_height = tool->slot_height;
     glm::ivec3 slot_vec = {slot_height, slot_height / 5, slot_height / 10};
     tool->clear_flyout_elements();
     tool->push_flyout_element(tool->data_type_dropdown, slot_vec);
-    if (tool->data_type_dropdown->get_value() == "MANHOLES") {
+    if (tool->data_type_dropdown->get_value() == "MANHOLES")
+    {
       tool->push_flyout_element(tool->open_mh_button, slot_vec);
       tool->push_flyout_element(tool->mh_ID_dropdown, slot_vec);
       tool->push_flyout_element(tool->mh_inv_dropdown, slot_vec);
@@ -94,7 +99,8 @@ public:
       tool->push_flyout_element(tool->mh_depth_dropdown, slot_vec);
       tool->push_flyout_element(tool->import_mh_button, slot_vec);
     }
-    if (tool->data_type_dropdown->get_value() == "PIPES") {
+    if (tool->data_type_dropdown->get_value() == "PIPES")
+    {
       tool->push_flyout_element(tool->open_pipe_button, slot_vec);
       tool->push_flyout_element(tool->pipe_upID_dropdown, slot_vec);
       tool->push_flyout_element(tool->pipe_dnID_dropdown, slot_vec);
@@ -105,7 +111,8 @@ public:
     }
     tool->rescale(tool->current_ribbon_width);
   }
-  static void open_manholes_dataset(LoadTool *tool) {
+  static void open_manholes_dataset(LoadTool *tool)
+  {
     tool->manhole_dataset = LoadTool::open_shapefile();
     auto field_names = LoadTool::read_shapefile_fields(tool->manhole_dataset);
     tool->mh_ID_dropdown->set_selection_options(field_names, 4);
@@ -114,8 +121,10 @@ public:
     tool->mh_depth_dropdown->set_selection_options(field_names, 4);
   }
 
-  static void import_manholes(LoadTool *tool) {
-    if (tool->manhole_dataset) {
+  static void import_manholes(LoadTool *tool)
+  {
+    if (tool->manhole_dataset)
+    {
       HydraulicNetwork::LoadedNetwork->import_manholes(
           tool->manhole_dataset, tool->mh_ID_dropdown->get_value(),
           tool->mh_inv_dropdown->get_value(),
@@ -123,7 +132,8 @@ public:
           tool->mh_depth_dropdown->get_value());
     }
   }
-  static void open_pipe_dataset(LoadTool *tool) {
+  static void open_pipe_dataset(LoadTool *tool)
+  {
     tool->pipe_dataset = LoadTool::open_shapefile();
     auto field_names = LoadTool::read_shapefile_fields(tool->pipe_dataset);
     tool->pipe_upID_dropdown->set_selection_options(field_names, 4);
@@ -132,8 +142,10 @@ public:
     tool->pipe_dndrop_dropdown->set_selection_options(field_names, 4);
     tool->pipe_dia_dropdown->set_selection_options(field_names, 4);
   }
-  static void import_pipes(LoadTool *tool) {
-    if (tool->pipe_dataset) {
+  static void import_pipes(LoadTool *tool)
+  {
+    if (tool->pipe_dataset)
+    {
       HydraulicNetwork::LoadedNetwork->import_pipes(
           tool->pipe_dataset, tool->pipe_upID_dropdown->get_value(),
           tool->pipe_dnID_dropdown->get_value(),
@@ -143,8 +155,10 @@ public:
     }
   }
   void on_select() override {}
-  void on_deselect() override {
-    if (manhole_dataset) {
+  void on_deselect() override
+  {
+    if (manhole_dataset)
+    {
       GDALClose(manhole_dataset);
       manhole_dataset = nullptr;
       mh_ID_dropdown->set_selection_options({}, 4);
@@ -152,7 +166,8 @@ public:
       mh_dia_dropdown->set_selection_options({}, 4);
       mh_depth_dropdown->set_selection_options({}, 4);
     }
-    if (pipe_dataset) {
+    if (pipe_dataset)
+    {
       GDALClose(pipe_dataset);
       manhole_dataset = nullptr;
       pipe_upID_dropdown->set_selection_options({}, 4);
@@ -162,31 +177,30 @@ public:
       pipe_dia_dropdown->set_selection_options({}, 4);
     }
   }
-  static GDALDataset * open_shapefile() {
-    nfdchar_t *shapefile_path = NULL;
-    nfdresult_t result = NFD_OpenDialog("shp", NULL, &shapefile_path);
-    if (result == NFD_OKAY) {
-      // Successful read
+  static GDALDataset *open_shapefile()
+  {
+    if (auto shapefile_path = open_file("shp"))
+    { // Successful read
       GDALDataset *shapefile = static_cast<GDALDataset *>(
           GDALOpenEx(shapefile_path, GDAL_OF_VECTOR, NULL, NULL, NULL));
-      if (shapefile == NULL) {
+      if (shapefile == NULL)
+      {
         std::cerr << "Error: Could not open file." << std::endl;
         return nullptr;
-      } else {
+      }
+      else
+      {
         std::cout << "Successfully read file!" << std::endl;
         return shapefile;
       }
-    } else if (result == NFD_CANCEL) {
-      // User pressed cancel
-      return nullptr;
-    } else {
-      // Error, run NFD_GetError()
-      return nullptr;
     }
+    return nullptr;
   }
   static std::vector<std::string>
-  read_shapefile_fields(GDALDataset *shapefile) {
-    if (shapefile) {
+  read_shapefile_fields(GDALDataset *shapefile)
+  {
+    if (shapefile)
+    {
       OGRLayer *layer;
       layer = shapefile->GetLayer(0);
       layer->ResetReading();
@@ -194,7 +208,8 @@ public:
       int field_count = layer->GetLayerDefn()->GetFieldCount();
       std::cout << std::to_string(field_count) << " Fields in the file."
                 << std::endl;
-      for (int i = 0; i < field_count; i++) {
+      for (int i = 0; i < field_count; i++)
+      {
         field_names.push_back(
             layer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef());
       }

@@ -307,8 +307,8 @@ public:
   static Referenced<HydraulicNetwork> LoadedNetwork;
 
 private:
-  float horizontal_exaggeration = 7.0f;
-  float vertical_exaggeration = 17.0f;
+  float horizontal_exaggeration = 1.0f;
+  float vertical_exaggeration = 1.0f;
   Referenced<InstancedMesh> manholes;
   Referenced<CylinderMesh> manhole_mesh;
   Referenced<PhongMaterial> manhole_material;

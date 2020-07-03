@@ -93,7 +93,7 @@ public:
          bounds.top() -
              (static_cast<float>(tool_index) + 0.5f) * ribbon_width_layer,
          0.0f});
-    for (int i = 0; i < tools.size(); i++) {
+    for (size_t i = 0; i < tools.size(); i++) {
       tools[i]->icon->set_scale(glm::vec3(ribbon_width_layer));
       tools[i]->icon->set_position(
           {bounds.left() + 0.5f * ribbon_width_layer,
@@ -166,7 +166,7 @@ public:
         i++;
       }
       i--;
-      if (i < ribbon->tool_count() && i != ribbon->tool_index) {
+      if (i < ribbon->tool_count() && static_cast<int>(i) != ribbon->tool_index) {
         ribbon->select_tool(i);
       }
       if (ribbon->tool_index >= 0 &&
@@ -199,8 +199,8 @@ public:
     ribbon->shadow->render(camera, ribbon->shadow_material.get());
     ribbon->ribbon->render(camera, ribbon->ribbon_material.get());
     ribbon->selection->render(camera, ribbon->selection_material.get());
-    for (int i = 0; i < ribbon->tools.size(); i++) {
-      if (i == ribbon->tool_index) {
+    for (size_t i = 0; i < ribbon->tools.size(); i++) {
+      if (static_cast<int>(i) == ribbon->tool_index) {
         ribbon->tools[i]->icon->render(camera, ribbon->ribbon_material.get());
       } else {
         ribbon->tools[i]->icon->render(camera, ribbon->tool_material.get());
