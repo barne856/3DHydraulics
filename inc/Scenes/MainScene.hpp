@@ -13,6 +13,7 @@ using namespace mare;
 // 3DH
 #include "Entities/HydraulicNetwork.hpp"
 #include "Layers/RibbonLayer.hpp"
+#include "Entities/Terrain.hpp"
 
 class MainScene : public Scene {
 public:
@@ -20,6 +21,8 @@ public:
     gen_layer<RibbonLayer>();
     HydraulicNetwork::LoadedNetwork = gen_ref<HydraulicNetwork>();
     push_entity(HydraulicNetwork::LoadedNetwork);
+    auto terrain = gen_entity<Terrain>(5, 5);
+    terrain->set_scale(glm::vec3(5000.0f));
     set_far_clip_plane_persp(100000.0f);
     set_near_clip_plane_persp(100.0f);
     set_far_clip_plane_ortho(100000.0f);
