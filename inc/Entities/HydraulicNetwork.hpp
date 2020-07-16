@@ -18,6 +18,10 @@ using namespace mare;
 // GDAL
 #include <ogrsf_frmts.h>
 
+// 3DH
+#include "GDAL/gdal_io.hpp"
+using namespace gdal_input;
+
 // forward declarations
 class HydraulicLink;
 
@@ -164,36 +168,27 @@ public:
     push_packet({pipes, pipe_material});
     gen_system<PacketRenderer>();
   }
-  void import_manholes(GDALDataset *mh_dataset, std::string const &uID_field,
+  void import_manholes(VectorDataset *mh_dataset, std::string layer_name,
+                       std::string const &uID_field,
                        std::string const &invert_field,
                        std::string const &diameter_field,
                        std::string const &depth_field) {
     nodes_.clear();
     manholes->clear_instances();
     if (mh_dataset) {
-      OGRLayer *layer;
-      layer = mh_dataset->GetLayer(0);
-      // for each point geometry in the layer, construct a new Manhole and
-      // push it onto the nodes_ vector.
-      for (const auto &feature : layer) {
+      for (int64_t i = 0; i < mh_dataset->get_feature_count(layer_name); i++) {
         Referenced<Manhole> mh = gen_ref<Manhole>();
-        const OGRGeometry *geometry = feature->GetGeometryRef();
-        if (geometry != nullptr &&
-            wkbFlatten(geometry->getGeometryType()) == wkbPoint) {
-          const OGRPoint *point = geometry->toPoint();
-          mh->set_x(point->getX());
-          mh->set_y(point->getY());
-          mh->set_z(point->getZ());
-        } else {
-          std::cerr << "Error reading geometry from file." << std::endl;
-        }
-        mh->set_ID(feature->GetFieldAsString(uID_field.c_str()));
-        // use invert field if the point is 2D
-        if (mh->get_z() == 0.0) {
-          mh->set_invert(feature->GetFieldAsDouble(invert_field.c_str()));
-        }
-        mh->set_diameter(feature->GetFieldAsDouble(diameter_field.c_str()));
-        mh->set_depth(feature->GetFieldAsDouble(depth_field.c_str()));
+        glm::dvec3 point =
+            mh_dataset->get_point_feature_geometry(layer_name, i);
+        mh->set_x(point.x);
+        mh->set_y(point.y);
+        mh->set_ID(mh_dataset->get_field_as_string(layer_name, i, uID_field));
+        mh->set_invert(
+            mh_dataset->get_field_as_double(layer_name, i, invert_field));
+        mh->set_diameter(
+            mh_dataset->get_field_as_double(layer_name, i, diameter_field));
+        mh->set_depth(
+            mh_dataset->get_field_as_double(layer_name, i, depth_field));
         nodes_.insert({mh->get_ID(), mh});
       }
       // construct an InstancedMesh to render the manholes in the Network's
@@ -202,7 +197,8 @@ public:
       construct_manhole_meshes();
     }
   }
-  void import_pipes(GDALDataset *pipe_dataset, std::string const &upID_field,
+  void import_pipes(VectorDataset *pipe_dataset, std::string layer_name,
+                    std::string const &upID_field,
                     std::string const &dnID_field,
                     std::string const &updrop_field,
                     std::string const &dndrop_field,
@@ -210,20 +206,22 @@ public:
     links_.clear();
     pipes->clear_instances();
     if (pipe_dataset) {
-      OGRLayer *layer;
-      layer = pipe_dataset->GetLayer(0);
-      // for each point geometry in the layer, construct a new Manhole and
-      // push it onto the nodes_ vector.
-      for (const auto &feature : layer) {
+      for (int64_t i = 0; i < pipe_dataset->get_feature_count(layer_name);
+           i++) {
         Referenced<Pipe> pipe = gen_ref<Pipe>();
-        std::string upID = feature->GetFieldAsString(upID_field.c_str());
-        std::string dnID = feature->GetFieldAsString(dnID_field.c_str());
+        std::string upID =
+            pipe_dataset->get_field_as_string(layer_name, i, upID_field);
+        std::string dnID =
+            pipe_dataset->get_field_as_string(layer_name, i, dnID_field);
         pipe->set_ID(upID + "-" + dnID);
         pipe->set_up_node(nodes_[upID]);
         pipe->set_dn_node(nodes_[dnID]);
-        pipe->set_updrop(feature->GetFieldAsDouble(updrop_field.c_str()));
-        pipe->set_dndrop(feature->GetFieldAsDouble(dndrop_field.c_str()));
-        pipe->set_dia(feature->GetFieldAsDouble(dia_field.c_str()));
+        pipe->set_updrop(
+            pipe_dataset->get_field_as_double(layer_name, i, updrop_field));
+        pipe->set_dndrop(
+            pipe_dataset->get_field_as_double(layer_name, i, dndrop_field));
+        pipe->set_dia(
+            pipe_dataset->get_field_as_double(layer_name, i, dia_field));
         links_.insert({pipe->get_ID(), pipe});
       }
       construct_pipe_meshes();
@@ -280,16 +278,20 @@ public:
     for (auto const &node : nodes_) {
       if (auto const &mh = std::dynamic_pointer_cast<Manhole>(node.second)) {
         glm::vec3 scale = {horizontal_exaggeration * mh->get_diameter() / 12.0f,
-                           horizontal_exaggeration * mh->get_diameter() / 12.0f, vertical_exaggeration * mh->get_depth()};
-        glm::vec3 position = {static_cast<float>(mh->get_x() - x_offset_),
-                              static_cast<float>(mh->get_y() - y_offset_),
-                              vertical_exaggeration * static_cast<float>(mh->get_invert() - z_offset_)};
+                           horizontal_exaggeration * mh->get_diameter() / 12.0f,
+                           vertical_exaggeration * mh->get_depth()};
+        glm::vec3 position = {
+            static_cast<float>(mh->get_x() - x_offset_),
+            static_cast<float>(mh->get_y() - y_offset_),
+            vertical_exaggeration *
+                static_cast<float>(mh->get_invert() - z_offset_)};
         glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
                               glm::scale(glm::mat4(1.0f), scale);
         manholes->push_instance(transform);
       }
     }
   }
+  glm::dvec3 get_offset() { return {x_offset_, y_offset_, z_offset_}; }
   glm::dvec3 calc_offset() {
     double i = 0.0;
     glm::dvec3 offset{};
@@ -318,14 +320,14 @@ private:
   std::unordered_map<std::string, Referenced<HydraulicNode>>
       nodes_; /**< The HydraulicNodes in the HydraulicNetwork.*/
   std::unordered_map<std::string, Referenced<HydraulicLink>>
-      links_;       /**< The HydraulicLinks in the HydraulicNetwork.*/
-  double x_offset_; /**< x coordinate offset from the HydraulicNode's
+      links_;              /**< The HydraulicLinks in the HydraulicNetwork.*/
+  double x_offset_ = 0.0f; /**< x coordinate offset from the HydraulicNode's
                        coordinate system to reduce errors from 32-bit floating
                        point rounding.*/
-  double y_offset_; /**< y coordinate offset from the HydraulicNode's
+  double y_offset_ = 0.0f; /**< y coordinate offset from the HydraulicNode's
                        coordinate system to reduce errors from 32-bit floating
                        point rounding.*/
-  double z_offset_; /**< z coordinate offset from the HydraulicNode's
+  double z_offset_ = 0.0f; /**< z coordinate offset from the HydraulicNode's
                         coordinate system to reduce errors from 32-bit floating
                         point rounding.*/
 };

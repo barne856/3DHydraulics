@@ -22,7 +22,7 @@ public:
    *
    */
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
-    uint32_t ribbon_width_in_pixels = 75;
+    uint32_t ribbon_width_in_pixels = 125;
     auto load_tool = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
     auto ribbon_ui = gen_entity<RibbonUI>(this, ribbon_width_in_pixels);
     ribbon_ui->push_tool(load_tool);
@@ -38,6 +38,7 @@ public:
   }
   void on_enter() override {}
   void render(float dt) override {
+    Renderer::wireframe_mode(false);
     Renderer::enable_depth_testing(false);
     Renderer::enable_blending(true);
     t += dt;
