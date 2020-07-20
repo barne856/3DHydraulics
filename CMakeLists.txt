@@ -9,7 +9,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(GDAL REQUIRED)
 include_directories(${GDAL_INCLUDE_DIRS})
-include_directories("./ext/eigen", "./ext/nfd/src/include" "./inc" "./MARE/inc" "./MARE/ext/glfw/include" "./MARE/ext/glew-2.1.0/include" "./MARE/ext/glm/glm" "./MARE/ext/loaders/stb")
+include_directories("./ext/eigen" "./ext/nfd/src/include" "./inc" "./MARE/inc" "./MARE/ext/glfw/include" "./MARE/ext/glew-2.1.0/include" "./MARE/ext/glm/glm" "./MARE/ext/loaders/stb")
 
 set(BUILD_SHARED_LIBS OFF)
 set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF)

@@ -2,14 +2,16 @@
 #define RIBBONLAYER
 
 // MARE
-#include "Layer.hpp"
 #include "Entities/UI/Dropdown.hpp"
+#include "Layer.hpp"
+
 using namespace mare;
 
 // 3DH
 #include "Entities/DebugInfo.hpp"
-#include "Entities/UI/RibbonUI.hpp"
 #include "Entities/RibbonTools/LoadTool.hpp"
+#include "Entities/RibbonTools/TerrainTool.hpp"
+#include "Entities/UI/RibbonUI.hpp"
 
 /**
  * @brief A Layer used to render the RibbonUI
@@ -24,8 +26,10 @@ public:
   RibbonLayer() : Layer(ProjectionType::ORTHOGRAPHIC) {
     uint32_t ribbon_width_in_pixels = 125;
     auto load_tool = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
+    auto terrain_tool = gen_entity<TerrainTool>(this, ribbon_width_in_pixels);
     auto ribbon_ui = gen_entity<RibbonUI>(this, ribbon_width_in_pixels);
     ribbon_ui->push_tool(load_tool);
+    ribbon_ui->push_tool(terrain_tool);
 
     dinfo = gen_entity<DebugInfo>(1000);
     dinfo->color->set_color(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));

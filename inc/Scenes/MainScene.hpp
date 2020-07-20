@@ -38,7 +38,7 @@ public:
     Renderer::clear_depth_buffer();
     Renderer::enable_blending(true);
     Renderer::clear_color_buffer(bg_color);
-    Renderer::wireframe_mode(true);
+    //Renderer::wireframe_mode(true);
   }
   void on_exit() override {}
 

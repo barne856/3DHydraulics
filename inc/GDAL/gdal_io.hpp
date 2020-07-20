@@ -188,6 +188,23 @@ public:
    */
   std::vector<float> read_floats(int band, int x0, int xf, int y0, int yf,
                                  int n, int m, float offset = 0.0f);
+  /**
+   * @brief Reads bytes from a raster band. If access is out of bounds, junk
+   * data is returned.
+   *
+   * @param band The band index to read from starting a 1.
+   * @param x0 The first column of the raster band to read from.
+   * @param xf The last column of the raster band to read from.
+   * @param y0 The first row of the raster band to read from.
+   * @param yf The last row of the raster band to read from.
+   * @param n The number of columns to report. Must be <= xf-x0+1.
+   * @param m The number of rows to report. Must be <= yf-y0+1.
+   * @return The bytes read from the band. Left to right and up to down.
+   * Resolution may be smaller than the raw raster size depending on choice of n
+   * and m.
+   */
+  std::vector<unsigned char> read_bytes(int band, int x0, int xf, int y0, int yf,
+                                 int n, int m);
 
 private:
   GDALDataset *dataset = nullptr;

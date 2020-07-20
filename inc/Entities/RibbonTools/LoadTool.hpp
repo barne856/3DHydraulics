@@ -91,6 +91,9 @@ public:
       open_dem_button =
           gen_ref<Button<LoadTool>>(layer, bounds, "OPEN DEM DATA");
       open_dem_button->set_on_click_callback(open_dem, this);
+      open_image_button =
+          gen_ref<Button<LoadTool>>(layer, bounds, "OPEN IMAGE DATA");
+      open_image_button->set_on_click_callback(open_image, this);
       import_dem_button =
           gen_ref<Button<LoadTool>>(layer, bounds, "IMPORT DEM");
       import_dem_button->set_on_click_callback(import_dem, this);
@@ -126,6 +129,7 @@ public:
     }
     if (tool->data_type_dropdown->get_value() == "DEM") {
       tool->push_flyout_element(tool->open_dem_button, slot_vec);
+      tool->push_flyout_element(tool->open_image_button, slot_vec);
       tool->push_flyout_element(tool->import_dem_button, slot_vec);
     }
     tool->rescale(tool->current_ribbon_width);
@@ -212,15 +216,23 @@ public:
   static void open_dem(LoadTool *tool) {
     std::string filepath = open_file_dialog("bil");
     if (!filepath.empty()) {
-      tool->dem_terrain = gen_ref<Terrain>(
-          filepath, 8, 8, HydraulicNetwork::LoadedNetwork->get_offset());
+      tool->dem = gen_ref<RasterDataset>(filepath);
+    }
+  }
+  static void open_image(LoadTool *tool) {
+    std::string filepath = open_file_dialog("tif");
+    if (!filepath.empty()) {
+      tool->image = gen_ref<RasterDataset>(filepath);
     }
   }
   static void import_dem(LoadTool *tool) {
-    if (tool->dem_terrain) {
+    if (!tool->dem_terrain) {
       auto scene = Renderer::get_info().scene;
-      if (scene) {
-        // push another dem, the old dem will still be rendered if it exists
+      if (scene && tool->dem && tool->image) {
+        // generate and push terrain
+        tool->dem_terrain =
+            gen_ref<Terrain>(tool->dem.get(), tool->image.get(), 8, 6,
+                             HydraulicNetwork::LoadedNetwork->get_offset());
         scene->push_entity(tool->dem_terrain);
       }
     }
@@ -266,8 +278,11 @@ public:
   Referenced<Dropdown<LoadTool>> pipe_dia_dropdown;
   Referenced<Button<LoadTool>> import_pipe_button;
   // DEM
+  Referenced<RasterDataset> dem = nullptr;
+  Referenced<RasterDataset> image = nullptr;
   Referenced<Terrain> dem_terrain = nullptr;
   Referenced<Button<LoadTool>> open_dem_button;
+  Referenced<Button<LoadTool>> open_image_button;
   Referenced<Button<LoadTool>> import_dem_button;
 };
 

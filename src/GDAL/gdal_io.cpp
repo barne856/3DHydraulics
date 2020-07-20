@@ -1,8 +1,10 @@
 #include "GDAL/gdal_io.hpp"
 // Standard Library
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <thread>
+
 // EXT
 #include "nfd.h"
 
@@ -103,10 +105,10 @@ VectorDataset::get_polyline_feature_geometry(std::string layer_name,
       if (feature != nullptr) {
         OGRLineString *polyline = feature->GetGeometryRef()->toLineString();
         OGRPointIterator *point_iter = polyline->getPointIterator();
-        OGRPoint *ogr_point;
-        while (point_iter->getNextPoint(ogr_point)) {
+        OGRPoint ogr_point;
+        while (point_iter->getNextPoint(&ogr_point)) {
           result.push_back(
-              {ogr_point->getX(), ogr_point->getY(), ogr_point->getZ()});
+              {ogr_point.getX(), ogr_point.getY(), ogr_point.getZ()});
         }
         OGRPointIterator::destroy(point_iter);
       }
@@ -159,11 +161,13 @@ int RasterDataset::get_rows() {
   if (dataset) {
     return dataset->GetRasterYSize();
   }
+  return 0;
 }
 int RasterDataset::get_cols() {
   if (dataset) {
     return dataset->GetRasterXSize();
   }
+  return 0;
 }
 glm::dvec2 RasterDataset::get_pixel_scale() {
   glm::dvec2 scale{};
@@ -182,15 +186,79 @@ glm::dvec2 RasterDataset::get_top_left_coord() {
   return top_left;
 }
 std::vector<float> RasterDataset::read_floats(int band, int x0, int xf, int y0,
-                                              int yf, int n, int m, float offset) {
-  // Read elevations
+                                              int yf, int n, int m,
+                                              float offset) {
+  // calculate out of bounds offset
+  int u = -std::min(x0, 0);
+  int v = -std::min(y0, 0);
+  // calc resolution scale
+  int sx = (xf - x0 + 1) / n;
+  int sy = (yf - y0 + 1) / m;
+  // clamp row and column to raster bounds
+  x0 = glm::clamp(x0, 0, get_cols() - 1);
+  xf = glm::clamp(xf, 0, get_cols() - 1);
+  y0 = glm::clamp(y0, 0, get_rows() - 1);
+  yf = glm::clamp(yf, 0, get_rows() - 1);
+  int cols = xf - x0 + 1;
+  int rows = yf - y0 + 1;
+  int read_n = cols / sx;
+  int read_m = rows / sy;
   GDALRasterBand *raster_band = dataset->GetRasterBand(band);
+  float no_data_value = raster_band->GetNoDataValue();
   float *data;
-  data = (float *)CPLMalloc(sizeof(float) * n * m);
-  auto err = raster_band->RasterIO(GF_Read, x0, y0, xf-x0+1, yf-y0+1, data, n, m, GDT_Float32, 0, 0);
+  data = (float *)CPLMalloc(sizeof(float) * read_n * read_m);
+  auto err = raster_band->RasterIO(GF_Read, x0, y0, cols, rows, data, read_n,
+                                   read_m, GDT_Float32, 0, 0);
   std::vector<float> data_vec{};
-  for (int i = 0; i < n * m; i++) {
-    data_vec.push_back(data[i]-offset);
+  int k = 0;
+  for (int j = 0; j < m; j++) {
+    for (int i = 0; i < n; i++) {
+      if ((i >= u) && (i < read_n + u) && (j >= v) && (j < read_m + v)) {
+        data_vec.push_back(data[k] - offset);
+        k++;
+      } else {
+        data_vec.push_back(no_data_value);
+      }
+    }
+  }
+  CPLFree(data);
+  return data_vec;
+}
+std::vector<unsigned char> RasterDataset::read_bytes(int band, int x0, int xf,
+                                                     int y0, int yf, int n,
+                                                     int m) {
+  // calculate out of bounds offset
+  int u = -std::min(x0, 0);
+  int v = -std::min(y0, 0);
+  // calc resolution scale
+  int sx = (xf - x0 + 1) / n;
+  int sy = (yf - y0 + 1) / m;
+  // clamp row and column to raster bounds
+  x0 = glm::clamp(x0, 0, get_cols() - 1);
+  xf = glm::clamp(xf, 0, get_cols() - 1);
+  y0 = glm::clamp(y0, 0, get_rows() - 1);
+  yf = glm::clamp(yf, 0, get_rows() - 1);
+  int cols = xf - x0 + 1;
+  int rows = yf - y0 + 1;
+  int read_n = cols / sx;
+  int read_m = rows / sy;
+  GDALRasterBand *raster_band = dataset->GetRasterBand(band);
+  unsigned char no_data_value = raster_band->GetNoDataValue();
+  unsigned char *data;
+  data = (unsigned char *)CPLMalloc(sizeof(unsigned char) * read_n * read_m);
+  auto err = raster_band->RasterIO(GF_Read, x0, y0, cols, rows, data, read_n,
+                                   read_m, GDT_Byte, 0, 0);
+  std::vector<unsigned char> data_vec{};
+  int k = 0;
+  for (int j = 0; j < m; j++) {
+    for (int i = 0; i < n; i++) {
+      if ((i >= u) && (i < read_n + u) && (j >= v) && (j < read_m + v)) {
+        data_vec.push_back(data[k]);
+        k++;
+      } else {
+        data_vec.push_back(no_data_value);
+      }
+    }
   }
   CPLFree(data);
   return data_vec;

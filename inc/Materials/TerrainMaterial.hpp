@@ -23,7 +23,7 @@ public:
    * @brief uploads the color to the shader when rendered.
    *
    */
-  void render() override { upload_vec4("u_color", m_color); }
+  void render() override {}
   /**
    * @brief Set the color of the Material.
    *
