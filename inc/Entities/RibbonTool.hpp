@@ -38,9 +38,10 @@ public:
   }
   virtual void on_select() = 0;
   virtual void on_deselect() = 0;
+  virtual void init_flyout_elements(uint32_t ribbon_width_in_pixels) {}
   Referenced<Mesh> icon;
   void rescale(float ribbon_width) {
-    current_ribbon_width = ribbon_width;
+    ribbon_width_world = ribbon_width;
     float scale = base_layer->get_ortho_scale();
     float aspect = Renderer::get_info().window_aspect;
     flyout_closed_position = -scale * aspect - ribbon_width * 1.5f;
@@ -77,6 +78,9 @@ public:
       i += 1;
     }
   }
+  static void close_flyout_callback(RibbonTool *tool) {
+    tool->flyout_open = false;
+  }
   /**
    * @brief Push a UIElement onto the flyout element stack.
    * @details If there are no UIElements pushed, then the flyout will never
@@ -98,7 +102,8 @@ public:
     flyout_elements.clear();
     element_slots.clear();
   }
-  float current_ribbon_width;
+  uint32_t ribbon_width_in_pixels;
+  float ribbon_width_world;
   std::vector<Referenced<UIElement>> flyout_elements{};
   std::vector<glm::ivec3>
       element_slots; // {slots, hz padding, vt padding} in pixels
@@ -110,7 +115,7 @@ public:
   float flyout_position = 0.0f;
   float flyout_percent_open = 0.0f;
   bool flyout_open = false;
-  glm::vec4 flyout_color{0.9f, 0.9f, 1.0f, 1.0f};
+  glm::vec4 flyout_color{0.9f, 0.9f, 0.89f, 1.0f};
   bool selected = false;
 };
 

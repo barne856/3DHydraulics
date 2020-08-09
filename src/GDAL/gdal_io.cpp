@@ -264,6 +264,11 @@ std::vector<unsigned char> RasterDataset::read_bytes(int band, int x0, int xf,
   return data_vec;
 }
 
+float RasterDataset::get_no_data_float(int band) {
+  GDALRasterBand *raster_band = dataset->GetRasterBand(band);
+  return raster_band->GetNoDataValue();
+}
+
 std::string open_file_dialog(const char *extension) {
   nfdchar_t *filepath = NULL;
   nfdresult_t result = NFD_OpenDialog(extension, NULL, &filepath);

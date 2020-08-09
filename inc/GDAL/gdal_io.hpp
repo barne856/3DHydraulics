@@ -203,8 +203,9 @@ public:
    * Resolution may be smaller than the raw raster size depending on choice of n
    * and m.
    */
-  std::vector<unsigned char> read_bytes(int band, int x0, int xf, int y0, int yf,
-                                 int n, int m);
+  std::vector<unsigned char> read_bytes(int band, int x0, int xf, int y0,
+                                        int yf, int n, int m);
+  float get_no_data_float(int band);
 
 private:
   GDALDataset *dataset = nullptr;

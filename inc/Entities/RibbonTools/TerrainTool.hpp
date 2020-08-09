@@ -29,8 +29,10 @@ public:
 
       // vertical exaggeration slider
       ve_slider = gen_ref<Slider>(layer, bounds);
+      ve_slider->set_value(1.0f / 10.0f);
       // alpha slider
       alpha_slider = gen_ref<Slider>(layer, bounds);
+      alpha_slider->set_value(1.0f);
 
       // push data type dropdown
       push_flyout_element(ve_slider,

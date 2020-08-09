@@ -23,7 +23,10 @@ set(SRC
 ./src/main.cpp
 ./src/HydraulicNetwork.cpp
 ./src/GDAL/gdal_io.cpp
-./src/Math/math_3dh.cpp)
+./src/Math/math_3dh.cpp
+./src/RibbonTools/LoadTool.cpp
+./src/Terrain.cpp
+./src/RibbonTools/NodeTool.cpp)
 
 add_executable(3DH ${SRC})
 

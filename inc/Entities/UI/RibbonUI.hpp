@@ -103,6 +103,7 @@ public:
     }
   }
   void push_tool(Referenced<RibbonTool> tool) {
+    tool->init_flyout_elements(ribbon_width);
     tools.push_back(tool);
     rescale();
   }
@@ -145,13 +146,14 @@ public:
   Referenced<BasicColorMaterial> tool_material;
   Referenced<BasicColorMaterial> selection_material;
   Referenced<VertexColorMaterial> shadow_material;
-  glm::vec4 ribbon_color{0.9f, 0.9f, 1.0f, 1.0f};
+  glm::vec4 ribbon_color{0.9f, 0.9f, 0.9f, 1.0f};
   glm::vec4 tool_color{0.1f, 0.1f, 0.1f, 1.0f};
   glm::vec4 selection_color{0.17f, 0.45f, 1.0f, 1.0f};
   glm::vec4 shadow_color_dark{0.0f, 0.0f, 0.0f, 0.3f};
   glm::vec4 shadow_color_light{0.0f, 0.0f, 0.0f, 0.0f};
   uint32_t ribbon_width; // in pixels
   int tool_index = -1;
+  bool pressed_inside = false;
 };
 
 class RibbonUIControls : public ControlsSystem<RibbonUI> {
@@ -159,6 +161,7 @@ public:
   bool on_mouse_button(const RendererInput &input, RibbonUI *ribbon) override {
     glm::vec2 layer_coords = ribbon->get_model_coords();
     if (input.LEFT_MOUSE_JUST_PRESSED && ribbon->is_cursor_in_bounds()) {
+      ribbon->pressed_inside = true;
       float width = ribbon->get_right() - ribbon->get_left();
       float top = ribbon->get_top();
       uint32_t i = 1;
@@ -166,7 +169,8 @@ public:
         i++;
       }
       i--;
-      if (i < ribbon->tool_count() && static_cast<int>(i) != ribbon->tool_index) {
+      if (i < ribbon->tool_count() &&
+          static_cast<int>(i) != ribbon->tool_index) {
         ribbon->select_tool(i);
       }
       if (ribbon->tool_index >= 0 &&
@@ -180,14 +184,48 @@ public:
     float ribbon_width_layer =
         scale * aspect * static_cast<float>(ribbon->ribbon_width) /
         static_cast<float>(Renderer::get_info().window_width);
-    if (ribbon->tool_index >= 0 && input.LEFT_MOUSE_JUST_PRESSED &&
-        layer_coords.x > -scale * aspect + 6.0f * ribbon_width_layer) {
-      ribbon->tools[ribbon->tool_index]->flyout_open = false;
+    if (ribbon->tool_index >= 0 && ribbon->tools[ribbon->tool_index]->flyout_open == true &&
+        layer_coords.x < -scale * aspect + 6.0f * ribbon_width_layer) {
+      ribbon->pressed_inside = true;
+      return false;
+    }
+    ribbon->pressed_inside = false;
+    return false;
+  }
+  bool on_mouse_move(const RendererInput &input, RibbonUI *ribbon) override {
+    if (input.LEFT_MOUSE_PRESSED || input.MIDDLE_MOUSE_PRESSED) {
+      glm::vec2 layer_coords = ribbon->get_model_coords();
+      float scale = ribbon->get_layer()->get_ortho_scale();
+      float aspect = Renderer::get_info().window_aspect;
+      float ribbon_width_layer =
+          scale * aspect * static_cast<float>(ribbon->ribbon_width) /
+          static_cast<float>(Renderer::get_info().window_width);
+      bool on_ribbon = layer_coords.x < -scale * aspect + ribbon_width_layer;
+      bool open_and_on_flyout = false;
+      if (ribbon->tool_index >= 0) {
+        open_and_on_flyout =
+            (ribbon->tools[ribbon->tool_index]->flyout_open == true &&
+             layer_coords.x < -scale * aspect + 6.0f * ribbon_width_layer);
+      }
+      if (on_ribbon || open_and_on_flyout || ribbon->pressed_inside) {
+        return true;
+      }
     }
     return false;
   }
-  bool on_resize(const RendererInput &input, RibbonUI *ribbon) override
-  {
+  bool on_mouse_wheel(const RendererInput &input, RibbonUI *ribbon) override {
+    glm::vec2 layer_coords = ribbon->get_model_coords();
+    float scale = ribbon->get_layer()->get_ortho_scale();
+    float aspect = Renderer::get_info().window_aspect;
+    float ribbon_width_layer =
+        scale * aspect * static_cast<float>(ribbon->ribbon_width) /
+        static_cast<float>(Renderer::get_info().window_width);
+    if (layer_coords.x < -scale * aspect + 6.0f * ribbon_width_layer) {
+      return true;
+    }
+    return false;
+  }
+  bool on_resize(const RendererInput &input, RibbonUI *ribbon) override {
     ribbon->rescale();
     return false;
   }
