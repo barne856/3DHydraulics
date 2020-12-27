@@ -102,6 +102,15 @@ public:
     flyout_elements.clear();
     element_slots.clear();
   }
+  template <typename T> std::vector<T *> get_flyout_elements() {
+    std::vector<T *> elems;
+    for (auto &elem : flyout_elements) {
+      if (auto cast_elem = std::dynamic_pointer_cast<T>(elem)) {
+        elems.push_back(cast_elem.get());
+      }
+    }
+    return elems;
+  }
   uint32_t ribbon_width_in_pixels;
   float ribbon_width_world;
   std::vector<Referenced<UIElement>> flyout_elements{};

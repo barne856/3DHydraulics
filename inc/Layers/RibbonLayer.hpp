@@ -11,6 +11,7 @@ using namespace mare;
 #include "Entities/DebugInfo.hpp"
 #include "Entities/RibbonTools/LoadTool.hpp"
 #include "Entities/RibbonTools/NodeTool.hpp"
+#include "Entities/RibbonTools/NavigationTools.hpp"
 #include "Entities/RibbonTools/TerrainTool.hpp"
 #include "Entities/UI/RibbonUI.hpp"
 
@@ -29,10 +30,14 @@ public:
     // auto load_tool = gen_entity<LoadTool>(this, ribbon_width_in_pixels);
     // auto terrain_tool = gen_entity<TerrainTool>(this,
     // ribbon_width_in_pixels);
+    auto orbit_tool = gen_entity<OrbitTool>(this);
+    auto pan_tool = gen_entity<PanTool>(this);
     auto node_tool = gen_entity<NodeTool>(this);
     auto ribbon_ui = gen_entity<RibbonUI>(this, ribbon_width_in_pixels);
     // ribbon_ui->push_tool(load_tool);
     // ribbon_ui->push_tool(terrain_tool);
+    ribbon_ui->push_tool(orbit_tool);
+    ribbon_ui->push_tool(pan_tool);
     ribbon_ui->push_tool(node_tool);
 
     // dinfo = gen_entity<DebugInfo>(1000);

@@ -1,5 +1,9 @@
 #include "Entities/RibbonTools/NodeTool.hpp"
+#include "Entities/HydraulicNetwork.hpp"
+#include "Entities/UI/RibbonUI.hpp"
 #include "Meshes/CircleMesh.hpp"
+#include "Scene.hpp"
+#include "Systems/Controls/OrbitControls.hpp"
 
 NodeTool::NodeTool(Layer *layer) : RibbonTool(layer) {
   // The Tool's Icon
@@ -12,6 +16,14 @@ NodeTool::NodeTool(Layer *layer) : RibbonTool(layer) {
       glm::translate(glm::mat4(1.0f), {-0.125f, 0.125f, 0.0f}));
   std::dynamic_pointer_cast<InstancedMesh>(icon)->push_instance(
       glm::translate(glm::mat4(1.0f), {-0.25f, -0.25f, 0.0f}));
+  // generate and push controls for the tool onto the stack
+  gen_system<NodeToolControls>();
+}
+
+void NodeTool::on_deselect() {
+  Renderer::set_cursor(CursorType::ARROW);
+  auto sys = (Renderer::get_info().scene)->get_system<OrbitControls>();
+  sys ? sys->left_click_disabled = false : false;
 }
 
 void NodeTool::init_flyout_elements(uint32_t ribbon_width) {
@@ -234,4 +246,73 @@ void NodeTool::on_create_shape_select(NodeTool *tool) {
   tool->push_flyout_element(tool->create_elev_input_box, half_slot);
   tool->push_flyout_element(tool->create_ID_input_box, half_slot);
   tool->rescale(tool->ribbon_width_world);
+}
+
+bool NodeToolControls::on_mouse_button(RendererInput const &input,
+                                       NodeTool *tool) {
+  if (input.LEFT_MOUSE_JUST_PRESSED && !is_over_flyout) {
+    // generate new node at the clicked position
+    float dia, depth, elev;
+    std::string ID;
+    try {
+      dia = tool->create_diameter_input_box->get_input_value_as_float();
+    } catch (const std::exception &e) {
+      dia = 4.0f; // default value
+    }
+    try {
+      depth = tool->create_depth_input_box->get_input_value_as_float();
+    } catch (const std::exception &e) {
+      depth = 8.0f; // default value
+    }
+    try {
+      elev = tool->create_elev_input_box->get_input_value_as_float();
+    } catch (const std::exception &e) {
+      elev = 0.0f; // default value
+    }
+    try {
+      ID = tool->create_ID_input_box->get_input_value_as_string();
+    } catch (const std::exception &e) {
+      ID = ""; // default value
+    }
+    glm::vec3 position = Renderer::raycast(Renderer::get_info().scene);
+    HydraulicNetwork *network = HydraulicNetwork::LoadedNetwork.get();
+    double easting = position.x + network->offset.x;
+    double northing = position.y + network->offset.y;
+    Referenced<CylinderNode> node = gen_ref<CylinderNode>();
+    node->easting = easting;
+    node->northing = northing;
+    node->invert_elevation = elev;
+    node->node_depth = depth;
+    node->ID = ID;
+    node->inner_diameter = dia;
+    network->add_node(node);
+  }
+  return false;
+}
+
+bool NodeToolControls::on_mouse_move(RendererInput const &input,
+                                     NodeTool *tool) {
+  // Check if create flyout is open and cursor is off of flyout
+  auto guides = tool->get_flyout_elements<FlyoutGuide<NodeTool>>();
+  RibbonUI *ribbon = tool->base_layer->get_entity<RibbonUI>();
+  glm::vec2 layer_coords = ribbon->get_model_coords();
+  float scale = ribbon->get_layer()->get_ortho_scale();
+  float aspect = Renderer::get_info().window_aspect;
+  float ribbon_width_layer =
+      scale * aspect * static_cast<float>(ribbon->ribbon_width) /
+      static_cast<float>(Renderer::get_info().window_width);
+  bool in_flyout = layer_coords.x < -scale * aspect + 6.0f * ribbon_width_layer;
+  auto sys = (Renderer::get_info().scene)->get_system<OrbitControls>();
+  if (guides.size() > 0 && guides[0] == tool->create_guide.get() &&
+      tool->selected && !in_flyout) {
+    Renderer::set_cursor(CursorType::CROSSHAIRS);
+    sys ? sys->left_click_disabled = true : false;
+    is_over_flyout = false;
+  } else {
+    Renderer::set_cursor(CursorType::ARROW);
+    sys ? sys->left_click_disabled = false : false;
+    is_over_flyout = true;
+  }
+
+  return false;
 }

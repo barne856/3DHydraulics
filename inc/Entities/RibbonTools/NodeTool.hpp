@@ -10,6 +10,7 @@
 #include "Entities/UI/Button.hpp"
 #include "Entities/UI/FlyoutGuide.hpp"
 #include "Entities/UI/InputBox.hpp"
+#include "Systems.hpp"
 
 using namespace gdal_input;
 
@@ -17,7 +18,7 @@ class NodeTool : public RibbonTool {
 public:
   NodeTool(Layer *layer);
   void on_select() override {}
-  void on_deselect() override {}
+  void on_deselect() override;
   void init_flyout_elements(uint32_t ribbon_width) override;
   // Flyouts
   static void open_root_flyout(NodeTool *tool);
@@ -28,9 +29,9 @@ public:
   static void on_layer_select(NodeTool *tool);
   static void import_nodes(NodeTool *tool);
   // Edit
-  static void open_create_flyout(NodeTool* tool);
+  static void open_create_flyout(NodeTool *tool);
   // Create
-  static void on_create_shape_select(NodeTool* tool);
+  static void on_create_shape_select(NodeTool *tool);
 
   // Import node dataset
   Referenced<VectorDataset> imported_nodes;
@@ -63,6 +64,14 @@ public:
   Referenced<InputBox<NodeTool>> create_depth_input_box;
   Referenced<InputBox<NodeTool>> create_elev_input_box;
   Referenced<InputBox<NodeTool>> create_ID_input_box;
+};
+
+class NodeToolControls : public ControlsSystem<NodeTool> {
+public:
+  bool on_mouse_button(RendererInput const &input, NodeTool *tool) override;
+  bool on_mouse_move(RendererInput const &input, NodeTool *tool) override;
+private:
+bool is_over_flyout = false;
 };
 
 #endif

@@ -59,6 +59,9 @@ public:
       input_box->set_bounds(field_bounds);
     }
   }
+  std::string get_input_value_as_string() { return input_box->get_value(); }
+  float get_input_value_as_float() { return std::stof(input_box->get_value()); }
+  std::string get_units() { return unit_dropdown->get_value(); }
   Referenced<CharMesh> label;
   Referenced<BasicColorMaterial> label_material;
   Referenced<TextBox> input_box;
