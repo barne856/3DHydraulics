@@ -4,9 +4,6 @@
 [submodule "ext/nfd"]
 	path = ext/nfd
 	url = https://github.com/mlabbe/nativefiledialog
-[submodule "ext/eigen"]
-	path = ext/eigen
-	url = https://gitlab.com/libeigen/eigen.git
 [submodule "HAZEN"]
 	path = HAZEN
 	url = https://github.com/barne856/Hazen
